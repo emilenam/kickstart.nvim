@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -114,12 +114,15 @@ vim.o.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
-end)
+--vim.schedule(function()
+--  vim.o.clipboard = 'unnamedplus'
+--end)
 
 -- Enable break indent
 vim.o.breakindent = true
+
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
 
 -- Save undo history
 vim.o.undofile = true
@@ -204,6 +207,28 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
+
+-- Keybinds to create and navigate to/from terminals
+vim.keymap.set({ 'i', 'n', 't' }, '<A-h>', '<C-\\><C-N><C-w><C-h>', { desc = 'Move focus to the left window' })
+vim.keymap.set({ 'i', 'n', 't' }, '<A-l>', '<C-\\><C-N><C-w><C-l>', { desc = 'Move focus to the right window' })
+vim.keymap.set({ 'i', 'n', 't' }, '<A-j>', '<C-\\><C-N><C-w><C-j>', { desc = 'Move focus to the lower window' })
+vim.keymap.set({ 'i', 'n', 't' }, '<A-k>', '<C-\\><C-N><C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.keymap.set('n', '<leader>T', function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
+    buffer = buf,
+    desc = 'Auto Terminal Mode',
+    callback = function()
+      vim.cmd.startinsert()
+    end,
+  })
+  local win = vim.api.nvim_open_win(buf, true, {
+    split = 'below',
+    height = 20,
+  })
+  vim.fn.jobstart('/usr/bin/bash', { term = true })
+end, { desc = 'Create a terminal window below' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -698,6 +723,11 @@ require('lazy').setup({
             },
           },
         },
+
+        rust_analyzer = {},
+        pylsp = {},
+        --ccls = {},
+        clangd = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -881,20 +911,22 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    'catppuccin/nvim',
+    name = 'catppuccin',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
       ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
+      require('catppuccin').setup {
         styles = {
-          comments = { italic = false }, -- Disable italics in comments
+          comments = {}, -- Disable italics in comments
         },
+        auto_integrations = true,
       }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'catppuccin'
     end,
   },
 
@@ -976,9 +1008,9 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
