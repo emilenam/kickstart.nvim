@@ -121,6 +121,7 @@ vim.o.showmode = false
 -- Enable break indent
 vim.o.breakindent = true
 
+vim.o.tabstop = 4
 vim.o.shiftwidth = 4
 vim.o.expandtab = true
 
@@ -169,6 +170,12 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+vim.filetype.add {
+  filename = {
+    ['CMakeToolchain.txt'] = 'cmake',
+  },
+}
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -214,21 +221,30 @@ vim.keymap.set({ 'i', 'n', 't' }, '<A-l>', '<C-\\><C-N><C-w><C-l>', { desc = 'Mo
 vim.keymap.set({ 'i', 'n', 't' }, '<A-j>', '<C-\\><C-N><C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set({ 'i', 'n', 't' }, '<A-k>', '<C-\\><C-N><C-w><C-k>', { desc = 'Move focus to the upper window' })
 
-vim.keymap.set('n', '<leader>T', function()
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
-    buffer = buf,
-    desc = 'Auto Terminal Mode',
-    callback = function()
-      vim.cmd.startinsert()
-    end,
-  })
-  local win = vim.api.nvim_open_win(buf, true, {
-    split = 'below',
-    height = 20,
-  })
-  vim.fn.jobstart('/usr/bin/bash', { term = true })
-end, { desc = 'Create a terminal window below' })
+local term_win = function(split)
+  return function()
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
+      buffer = buf,
+      desc = 'Auto Terminal Mode',
+      callback = function()
+        vim.cmd.startinsert()
+      end,
+    })
+    local win = vim.api.nvim_open_win(buf, true, {
+      split = split,
+      height = 20,
+    })
+    vim.api.nvim_set_option_value('winfixbuf', true, { win = win })
+    vim.api.nvim_set_option_value('winfixheight', true, { win = win })
+    vim.fn.jobstart('/usr/bin/bash', { term = true })
+  end
+end
+
+if not vim.g.vscode then
+  vim.keymap.set('n', '<leader>T', term_win 'below', { desc = 'Create a terminal window below' })
+  vim.keymap.set('n', '<leader>Y', term_win 'right', { desc = 'Create a terminal window to the right' })
+end
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -243,6 +259,10 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.hl.on_yank()
   end,
 })
+
+if vim.g.vscode then
+  return
+end
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -272,7 +292,7 @@ rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
+  { 'NMAC427/guess-indent.nvim', opts = {} }, -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -484,6 +504,14 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      vim.keymap.set('n', '<leader>sG', function()
+        builtin.live_grep { cwd = require('telescope.utils').buffer_dir() }
+      end, { desc = '[S]earch by [G]rep in buffer directory' })
+
+      vim.keymap.set('n', '<leader>sF', function()
+        builtin.find_files { cwd = require('telescope.utils').buffer_dir() }
+      end, { desc = '[S]earch by [F]iles in buffer directory' })
     end,
   },
 
@@ -786,7 +814,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = { c = true, cpp = true, rust = true, rust_analyzer = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -986,7 +1014,7 @@ require('lazy').setup({
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
-      indent = { enable = true, disable = { 'ruby' } },
+      indent = { enable = false, disable = { 'ruby' } },
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
@@ -1016,7 +1044,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
