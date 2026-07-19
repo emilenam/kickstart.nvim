@@ -1003,6 +1003,7 @@ require('lazy').setup({
     lazy = false,
     build = ':TSUpdate',
     branch = 'main',
+    version = false,
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
       -- ensure basic parser are installed
