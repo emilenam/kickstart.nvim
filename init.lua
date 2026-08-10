@@ -246,6 +246,12 @@ if not vim.g.vscode then
   vim.keymap.set('n', '<leader>Y', term_win 'right', { desc = 'Create a terminal window to the right' })
 end
 
+vim.api.nvim_create_user_command('Cptpl', function()
+  vim.cmd.read { args = { vim.fn.stdpath 'config' .. '/templates/cptpl.cpp' }, range = { 0 } }
+  vim.cmd.write { '++p' }
+  vim.cmd.edit {}
+end, {})
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
